@@ -51,7 +51,7 @@ def submit_capstone():
   suite_name = "ex.07.all"
   suite = TestSuite()
 
-  suite.test(f"{suite_name}.reg_id", f"Valid Registration ID", testFunction = lambda: validate_registration_id(registration_id), dependsOn=[suite.lastTestId()])
+#   suite.test(f"{suite_name}.reg_id", f"Valid Registration ID", testFunction = lambda: validate_registration_id(registration_id), dependsOn=[suite.lastTestId()])
   
   for i in range(1,7):
     try:

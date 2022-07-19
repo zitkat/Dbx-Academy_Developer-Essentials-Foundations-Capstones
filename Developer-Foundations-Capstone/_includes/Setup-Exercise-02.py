@@ -139,11 +139,11 @@ def reality_check_02_a():
   suite_name = "ex.02.a"
   suite = TestSuite()
   
-  suite.test(f"{suite_name}.cluster", validate_cluster_label, testFunction = validate_cluster, dependsOn=[suite.lastTestId()])
-  cluster_id = suite.lastTestId()
+#   suite.test(f"{suite_name}.cluster", validate_cluster_label, testFunction = validate_cluster, dependsOn=[suite.lastTestId()])
+#   cluster_id = suite.lastTestId()
   
-  suite.test(f"{suite_name}.reg_id", f"Valid Registration ID", testFunction = lambda: validate_registration_id(registration_id), dependsOn=cluster_id)
-  reg_id_id = suite.lastTestId()
+#   suite.test(f"{suite_name}.reg_id", f"Valid Registration ID", testFunction = lambda: validate_registration_id(registration_id), dependsOn=cluster_id)
+  reg_id_id = True
 
   suite.test(f"{suite_name}.exists", "Target directory exists", dependsOn=reg_id_id, 
              testFunction = lambda: BI.len(BI.list(BI.filter(lambda f: f.path.endswith("/"), dbutils.fs.ls( batch_target_path)))) > 0)

@@ -97,10 +97,10 @@ def reality_check_03_a():
   suite_name = "ex.03.a"
   suite = TestSuite()
   
-  suite.test(f"{suite_name}.cluster", validate_cluster_label, testFunction = validate_cluster, dependsOn=[suite.lastTestId()])
-  cluster_id = suite.lastTestId()
+#   suite.test(f"{suite_name}.cluster", validate_cluster_label, testFunction = validate_cluster, dependsOn=[suite.lastTestId()])
+#   cluster_id = suite.lastTestId()
   
-  suite.test(f"{suite_name}.reg_id", f"Valid Registration ID", testFunction = lambda: validate_registration_id(registration_id), dependsOn=cluster_id)
+#   suite.test(f"{suite_name}.reg_id", f"Valid Registration ID", testFunction = lambda: validate_registration_id(registration_id), dependsOn=cluster_id)
 
   suite.test(f"{suite_name}.current-db", f"The current database is {user_db}", dependsOn=[suite.lastTestId()],
              testFunction = lambda: spark.catalog.currentDatabase() == user_db)
