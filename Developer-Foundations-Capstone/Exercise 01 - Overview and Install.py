@@ -7,6 +7,14 @@
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC # Important info from DataSentics
+# MAGIC 
+# MAGIC - Use cluster called `Capstone Foundations`
+# MAGIC - Clone this project (whole folder) into your home folder
+
+# COMMAND ----------
+
 # MAGIC %md # Exercise #1 - Project Overview & Dataset Install
 # MAGIC 
 # MAGIC The capstone project aims to assess rudimentary skills as it relates to the Apache Spark and DataFrame APIs.
@@ -118,6 +126,8 @@
 
 # MAGIC %md ### Setup - Create A Cluster
 # MAGIC 
+# MAGIC **Important note: In DataSentics Academy dev (standard SKU) workspace, there is a preconfigured cluster called `Capstone Foundations`. Please use this cluster instead of creating your own = skip the instruction below!**
+# MAGIC
 # MAGIC #### Databricks Community Edition
 # MAGIC 
 # MAGIC This Capstone project was designed to work with Databricks Runtime Version (DBR) 9.1 LTS and the Databricks Community Edition's (CE) default cluster configuration. 
