@@ -8,6 +8,14 @@
 # COMMAND ----------
 
 # MAGIC %md
+# MAGIC # Important info from DataSentics
+# MAGIC 
+# MAGIC - Use cluster called `Capstone Essentials` (it has 8 cores which is needed to pass checks)
+# MAGIC - Clone this project (whole folder) into your home folder
+
+# COMMAND ----------
+
+# MAGIC %md
 # MAGIC 
 # MAGIC # Databricks Partner Capstone Project
 # MAGIC 
