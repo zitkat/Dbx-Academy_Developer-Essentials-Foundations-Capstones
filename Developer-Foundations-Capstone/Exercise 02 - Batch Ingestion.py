@@ -154,8 +154,62 @@ fixed_width_column_defs = {
 
 # COMMAND ----------
 
-# TODO
-# Use this cell to complete your solution
+print(dbutils.fs.head(batch_2017_path))
+
+# COMMAND ----------
+
+df2017 = spark.read.text(batch_2017_path)
+
+# COMMAND ----------
+
+from pyspark.sql import functions as F
+
+# COMMAND ----------
+
+[(s - 1, s + l - 1) for col_name, (s, l) in fixed_width_column_defs.items()]
+
+# COMMAND ----------
+
+for col_name, (s, l) in fixed_width_column_defs.items():
+    df2017 = df2017.withColumn(col_name, F.rtrim(F.ltrim(F.substring(df2017['value'], s, l))))
+
+# COMMAND ----------
+
+df2017_split = df2017.drop(F.col("value"))
+
+# COMMAND ----------
+
+df2017_split = df2017_split.replace("", None)
+
+# COMMAND ----------
+
+# filter rows where any column is null
+display(df2017_split.filter(
+    F.greatest(  # returns true if any of the columns is null
+        *[F.col(i).isNull() for i in df2017_split.columns])))
+
+# COMMAND ----------
+
+df2017_split = (df2017_split
+                  .withColumn("ingest_file_name", F.lit(batch_2017_path))
+                  .withColumn("ingested_at", F.current_timestamp())
+             )
+
+# COMMAND ----------
+
+display(df2017_split)
+
+# COMMAND ----------
+
+df2017_split.printSchema()
+
+# COMMAND ----------
+
+batch_target_path
+
+# COMMAND ----------
+
+df2017_split.write.save(batch_target_path, format="delta", mode="overwrite")
 
 # COMMAND ----------
 
@@ -188,8 +242,25 @@ reality_check_02_a()
 
 # COMMAND ----------
 
-# TODO
-# Use this cell to complete your solution
+df2018 = spark.read.csv(batch_2018_path, sep="\t", header=True)
+
+# COMMAND ----------
+
+df2018 = (df2018
+              .replace("null", None)
+              .withColumn("ingest_file_name", F.lit(batch_2018_path))
+              .withColumn("ingested_at", F.current_timestamp())
+         )
+
+# COMMAND ----------
+
+display(df2018.filter(
+    F.greatest(  # returns true if any of the columns is null
+        *[F.col(i).isNull() for i in df2017_split.columns])))
+
+# COMMAND ----------
+
+df2018.write.save(batch_target_path, format="delta", mode="append")
 
 # COMMAND ----------
 
