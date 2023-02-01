@@ -1,5 +1,6 @@
 # Databricks notebook source
-# MAGIC %md-sandbox
+# MAGIC %md
+# MAGIC -sandbox
 # MAGIC 
 # MAGIC <div style="text-align: center; line-height: 0; padding-top: 9px;">
 # MAGIC   <img src="https://databricks.com/wp-content/uploads/2018/03/db-academy-rgb-1200px.png" alt="Databricks Learning" style="width: 600px">
@@ -7,7 +8,7 @@
 
 # COMMAND ----------
 
-# MAGIC %md 
+# MAGIC %md
 # MAGIC # Exercise #2 - Batch Ingestion
 # MAGIC 
 # MAGIC In this exercise you will be ingesting three batches of orders, one for 2017, 2018 and 2019.
@@ -32,9 +33,22 @@
 
 # COMMAND ----------
 
-# MAGIC %md <h2><img src="https://files.training.databricks.com/images/105/logo_spark_tiny.png"> Setup Exercise #2</h2>
+# MAGIC %md
+# MAGIC <h2><img src="https://files.training.databricks.com/images/105/logo_spark_tiny.png"> Setup Exercise #2</h2>
 # MAGIC 
 # MAGIC To get started, run the following cell to setup this exercise, declaring exercise-specific variables and functions.
+
+# COMMAND ----------
+
+import sys
+
+# COMMAND ----------
+
+sys.executable
+
+# COMMAND ----------
+
+exec_path = sys.executable
 
 # COMMAND ----------
 
@@ -42,16 +56,18 @@
 
 # COMMAND ----------
 
-# MAGIC %md Run the following cell to preview a list of the files you will be processing in this exercise.
+# MAGIC %md
+# MAGIC Run the following cell to preview a list of the files you will be processing in this exercise.
 
 # COMMAND ----------
 
-files = dbutils.fs.ls(f"{working_dir}/raw/orders/batch") # List all the files
-display(files)                                           # Display the list of files
+files = dbutils.fs.ls(f"{working_dir}/raw/orders/batch")  # List all the files
+display(files)  # Display the list of files
 
 # COMMAND ----------
 
-# MAGIC %md <h2><img src="https://files.training.databricks.com/images/105/logo_spark_tiny.png"> Exercise #2.A - Ingest Fixed-Width File</h2>
+# MAGIC %md
+# MAGIC <h2><img src="https://files.training.databricks.com/images/105/logo_spark_tiny.png"> Exercise #2.A - Ingest Fixed-Width File</h2>
 # MAGIC 
 # MAGIC **In this step you will need to:**
 # MAGIC 1. Use the variable **`batch_2017_path`**, and **`dbutils.fs.head`** to investigate the 2017 batch file, if needed.
@@ -115,7 +131,8 @@ display(files)                                           # Display the list of f
 
 # COMMAND ----------
 
-# MAGIC %md ### Fixed-Width Meta Data 
+# MAGIC %md
+# MAGIC ### Fixed-Width Meta Data 
 # MAGIC 
 # MAGIC The following dictionary is provided for reference and/or implementation<br/>
 # MAGIC (depending on which strategy you choose to employ).
@@ -125,30 +142,31 @@ display(files)                                           # Display the list of f
 # COMMAND ----------
 
 fixed_width_column_defs = {
-  "submitted_at": (1, 15),
-  "order_id": (16, 40),
-  "customer_id": (56, 40),
-  "sales_rep_id": (96, 40),
-  "sales_rep_ssn": (136, 15),
-  "sales_rep_first_name": (151, 15),
-  "sales_rep_last_name": (166, 15),
-  "sales_rep_address": (181, 40),
-  "sales_rep_city": (221, 20),
-  "sales_rep_state": (241, 2),
-  "sales_rep_zip": (243, 5),
-  "shipping_address_attention": (248, 30),
-  "shipping_address_address": (278, 40),
-  "shipping_address_city": (318, 20),
-  "shipping_address_state": (338, 2),
-  "shipping_address_zip": (340, 5),
-  "product_id": (345, 40),
-  "product_quantity": (385, 5),
-  "product_sold_price": (390, 20)
+    "submitted_at": (1, 15),
+    "order_id": (16, 40),
+    "customer_id": (56, 40),
+    "sales_rep_id": (96, 40),
+    "sales_rep_ssn": (136, 15),
+    "sales_rep_first_name": (151, 15),
+    "sales_rep_last_name": (166, 15),
+    "sales_rep_address": (181, 40),
+    "sales_rep_city": (221, 20),
+    "sales_rep_state": (241, 2),
+    "sales_rep_zip": (243, 5),
+    "shipping_address_attention": (248, 30),
+    "shipping_address_address": (278, 40),
+    "shipping_address_city": (318, 20),
+    "shipping_address_state": (338, 2),
+    "shipping_address_zip": (340, 5),
+    "product_id": (345, 40),
+    "product_quantity": (385, 5),
+    "product_sold_price": (390, 20),
 }
 
 # COMMAND ----------
 
-# MAGIC %md ### Implement Exercise #2.A
+# MAGIC %md
+# MAGIC ### Implement Exercise #2.A
 # MAGIC 
 # MAGIC Implement your solution in the following cell:
 
@@ -171,7 +189,9 @@ from pyspark.sql import functions as F
 # COMMAND ----------
 
 for col_name, (s, l) in fixed_width_column_defs.items():
-    df2017 = df2017.withColumn(col_name, F.rtrim(F.ltrim(F.substring(df2017['value'], s, l))))
+    df2017 = df2017.withColumn(
+        col_name, F.rtrim(F.ltrim(F.substring(df2017["value"], s, l)))
+    )
 
 # COMMAND ----------
 
@@ -184,16 +204,19 @@ df2017_split = df2017_split.replace("", None)
 # COMMAND ----------
 
 # filter rows where any column is null
-display(df2017_split.filter(
-    F.greatest(  # returns true if any of the columns is null
-        *[F.col(i).isNull() for i in df2017_split.columns])))
+display(
+    df2017_split.filter(
+        F.greatest(  # returns true if any of the columns is null
+            *[F.col(i).isNull() for i in df2017_split.columns]
+        )
+    )
+)
 
 # COMMAND ----------
 
-df2017_split = (df2017_split
-                  .withColumn("ingest_file_name", F.lit(batch_2017_path))
-                  .withColumn("ingested_at", F.current_timestamp())
-             )
+df2017_split = df2017_split.withColumn(
+    "ingest_file_name", F.lit(batch_2017_path)
+).withColumn("ingested_at", F.current_timestamp())
 
 # COMMAND ----------
 
@@ -213,7 +236,8 @@ df2017_split.write.save(batch_target_path, format="delta", mode="overwrite")
 
 # COMMAND ----------
 
-# MAGIC %md ### Reality Check #2.A
+# MAGIC %md
+# MAGIC ### Reality Check #2.A
 # MAGIC Run the following command to ensure that you are on track:
 
 # COMMAND ----------
@@ -222,7 +246,8 @@ reality_check_02_a()
 
 # COMMAND ----------
 
-# MAGIC %md <h2><img src="https://files.training.databricks.com/images/105/logo_spark_tiny.png"> Exercise #2.B - Ingest Tab-Separted File</h2>
+# MAGIC %md
+# MAGIC <h2><img src="https://files.training.databricks.com/images/105/logo_spark_tiny.png"> Exercise #2.B - Ingest Tab-Separted File</h2>
 # MAGIC 
 # MAGIC **In this step you will need to:**
 # MAGIC 1. Use the variable **`batch_2018_path`**, and **`dbutils.fs.head`** to investigate the 2018 batch file, if needed.
@@ -236,7 +261,8 @@ reality_check_02_a()
 
 # COMMAND ----------
 
-# MAGIC %md ### Implement Exercise #2.b
+# MAGIC %md
+# MAGIC ### Implement Exercise #2.b
 # MAGIC 
 # MAGIC Implement your solution in the following cell:
 
@@ -246,17 +272,21 @@ df2018 = spark.read.csv(batch_2018_path, sep="\t", header=True)
 
 # COMMAND ----------
 
-df2018 = (df2018
-              .replace("null", None)
-              .withColumn("ingest_file_name", F.lit(batch_2018_path))
-              .withColumn("ingested_at", F.current_timestamp())
-         )
+df2018 = (
+    df2018.replace("null", None)
+    .withColumn("ingest_file_name", F.lit(batch_2018_path))
+    .withColumn("ingested_at", F.current_timestamp())
+)
 
 # COMMAND ----------
 
-display(df2018.filter(
-    F.greatest(  # returns true if any of the columns is null
-        *[F.col(i).isNull() for i in df2017_split.columns])))
+display(
+    df2018.filter(
+        F.greatest(  # returns true if any of the columns is null
+            *[F.col(i).isNull() for i in df2017_split.columns]
+        )
+    )
+)
 
 # COMMAND ----------
 
@@ -264,7 +294,8 @@ df2018.write.save(batch_target_path, format="delta", mode="append")
 
 # COMMAND ----------
 
-# MAGIC %md ### Reality Check #2.B
+# MAGIC %md
+# MAGIC ### Reality Check #2.B
 # MAGIC Run the following command to ensure that you are on track:
 
 # COMMAND ----------
@@ -273,7 +304,8 @@ reality_check_02_b()
 
 # COMMAND ----------
 
-# MAGIC %md <h2><img src="https://files.training.databricks.com/images/105/logo_spark_tiny.png"> Exercise #2.C - Ingest Comma-Separted File</h2>
+# MAGIC %md
+# MAGIC <h2><img src="https://files.training.databricks.com/images/105/logo_spark_tiny.png"> Exercise #2.C - Ingest Comma-Separted File</h2>
 # MAGIC 
 # MAGIC **In this step you will need to:**
 # MAGIC 1. Use the variable **`batch_2019_path`**, and **`dbutils.fs.head`** to investigate the 2019 batch file, if needed.
@@ -292,18 +324,44 @@ reality_check_02_b()
 
 # COMMAND ----------
 
-# MAGIC %md ### Implement Exercise #2.C
+# MAGIC %md
+# MAGIC ### Implement Exercise #2.C
 # MAGIC 
 # MAGIC Implement your solution in the following cell:
 
 # COMMAND ----------
 
-# TODO
-# Use this cell to complete your solution
+df2019 = spark.read.csv(batch_2019_path, sep=",", header=True)
 
 # COMMAND ----------
 
-# MAGIC %md ### Reality Check #2.C
+for old_col, new_col in zip(df2019.columns, fixed_width_column_defs.keys()):
+    df2019 = df2019.withColumnRenamed(old_col, new_col)
+
+# COMMAND ----------
+
+df2019.schema
+
+# COMMAND ----------
+
+df2019 = (
+    df2019.replace("null", None)
+    .withColumn("ingest_file_name", F.lit(batch_2019_path))
+    .withColumn("ingested_at", F.current_timestamp())
+)
+
+# COMMAND ----------
+
+display(df2019)
+
+# COMMAND ----------
+
+df2019.write.save(batch_target_path, format="delta", mode="append")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### Reality Check #2.C
 # MAGIC Run the following command to ensure that you are on track:
 
 # COMMAND ----------
@@ -312,7 +370,8 @@ reality_check_02_c()
 
 # COMMAND ----------
 
-# MAGIC %md <h2><img src="https://files.training.databricks.com/images/105/logo_spark_tiny.png"> Exercise #2 - Final Check</h2>
+# MAGIC %md
+# MAGIC <h2><img src="https://files.training.databricks.com/images/105/logo_spark_tiny.png"> Exercise #2 - Final Check</h2>
 # MAGIC 
 # MAGIC Run the following command to make sure this exercise is complete:
 
@@ -322,7 +381,8 @@ reality_check_02_final()
 
 # COMMAND ----------
 
-# MAGIC %md-sandbox
+# MAGIC %md
+# MAGIC -sandbox
 # MAGIC &copy; 2021 Databricks, Inc. All rights reserved.<br/>
 # MAGIC Apache, Apache Spark, Spark and the Spark logo are trademarks of the <a href="http://www.apache.org/">Apache Software Foundation</a>.<br/>
 # MAGIC <br/>
