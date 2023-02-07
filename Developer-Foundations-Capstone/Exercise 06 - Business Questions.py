@@ -47,8 +47,8 @@
 
 # COMMAND ----------
 
-# TODO
-# Use this cell to complete your solution
+spark.catalog.setCurrentDatabase(user_db)
+spark.catalog.currentDatabase()
 
 # COMMAND ----------
 
@@ -78,8 +78,23 @@ reality_check_06_a()
 
 # COMMAND ----------
 
-# TODO
-# Use this cell to complete your solution
+dforders = spark.table(orders_table)
+dfline_items = spark.table(line_items_table)
+dfproducts = spark.table(products_table)
+dfsales_reps = spark.table(sales_reps_table)
+
+# COMMAND ----------
+
+dforders_by_state = (dforders
+                        .groupBy("shipping_address_state")
+                        .count().alias("count")
+                        .orderBy("count", ascending=False)
+                    )
+display(dforders_by_state)
+
+# COMMAND ----------
+
+dforders_by_state.createOrReplaceTempView(question_1_results_table)
 
 # COMMAND ----------
 
@@ -121,12 +136,45 @@ reality_check_06_b()
 
 # COMMAND ----------
 
-# TODO
-# Use this cell to complete your solution
+from pyspark.sql import functions as F
 
-ex_avg = 0 # FILL_IN
-ex_min = 0 # FILL_IN
-ex_max = 0 # FILL_IN
+# COMMAND ----------
+
+df = (dforders
+        .join(dfline_items, on="order_id")
+        .join(dfproducts, on="product_id")
+        .join(dfsales_reps, on="sales_rep_id")
+     )
+
+# COMMAND ----------
+
+df_filt = (df
+      .filter(F.col("color") == "green")
+      .filter(F.col("shipping_address_state") == "NC")
+      .filter(F.col("_error_ssn_format"))
+     )
+
+df_out = df_filt.select(F.mean("product_sold_price"),
+                         F.min("product_sold_price"),
+                         F.max("product_sold_price")
+                        )
+df_out.createOrReplaceTempView(question_2_results_table)
+out = df_out.collect()
+
+# COMMAND ----------
+
+out
+
+# COMMAND ----------
+
+
+ex_avg = out[0][0]
+ex_min = out[0][1] # FILL_IN
+ex_max = out[0][2] # FILL_IN
+
+# COMMAND ----------
+
+display(df_out)
 
 # COMMAND ----------
 
@@ -170,8 +218,29 @@ reality_check_06_c(ex_avg, ex_min, ex_max)
 
 # COMMAND ----------
 
-# TODO
-# Use this cell to complete your solution
+df = (dforders
+        .join(dfline_items, on="order_id")
+        .join(dfproducts, on="product_id")
+        .join(dfsales_reps, on="sales_rep_id")
+     )
+
+df_prof = (df.withColumn("profit", 
+                        (F.col("product_sold_price") - F.col("price")) * 
+                        F.col("product_quantity"))
+             .groupBy("sales_rep_first_name", "sales_rep_last_name")
+             .sum("profit")
+          )
+
+df_largest = spark.createDataFrame(
+    [df_prof.rdd.max(key=lambda x: x["sum(profit)"])]
+    # this should be efficient, no sorting or double pass of data!
+)  
+df_largest.createOrReplaceTempView("question_3_results")
+display(df_largest)
+
+# COMMAND ----------
+
+display(df_prof)
 
 # COMMAND ----------
 

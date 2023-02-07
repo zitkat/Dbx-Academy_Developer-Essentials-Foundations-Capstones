@@ -82,8 +82,8 @@
 
 # COMMAND ----------
 
-# TODO
-# Use this cell to complete your solution
+spark.catalog.setCurrentDatabase(user_db)
+spark.catalog.currentDatabase()
 
 # COMMAND ----------
 
@@ -129,8 +129,64 @@ reality_check_05_a()
 
 # COMMAND ----------
 
-# TODO
-# Use this cell to complete your solution
+stream_path
+
+# COMMAND ----------
+
+df1 = spark.read.load("dbfs:/dbacademy/tomas.zitka@datasentics.com/developer-foundations-capstone/raw/orders/stream/",
+                     format="json")
+display(df1)
+
+# COMMAND ----------
+
+stream_schema = df1.schema
+
+# COMMAND ----------
+
+dfstream = spark.readStream.load(stream_path, 
+                                 format="json",
+                                 schema=stream_schema,
+                                 maxFilesPerTrigger=1)
+dfstream.isStreaming
+
+# COMMAND ----------
+
+from pyspark.sql import functions as F
+
+# COMMAND ----------
+
+dfstream_query = (dfstream
+                    .withColumn("ingested_at", F.current_timestamp())
+                    .withColumn("ingest_file_name", F.lit(stream_path))
+                    .withColumn("submitted_at", F.unix_timestamp(F.col("submittedAt"), 
+                                                                 format="yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").cast("Timestamp"))
+                    .withColumn("submitted_yyyy_mm", F.date_format(F.col("submitted_at"), "yyyy-MM"))
+
+                    .withColumn("shipping_address_attention", F.col("shippingAddress").attention)
+                    .withColumn("shipping_address_city", F.col("shippingAddress").city)
+                    .withColumn("shipping_address_state", F.col("shippingAddress").state)
+                    .withColumn("shipping_address_zip", F.col("shippingAddress").zip.cast("integer"))
+
+                    .withColumnRenamed("orderId", "order_id")
+                    .withColumnRenamed("customerId", "customer_id")
+                    .withColumnRenamed("salesRepId", "sales_rep_id")
+
+                    .drop("shippingAddress", "submittedAt", "products")
+               )
+
+# COMMAND ----------
+
+dbutils.fs.rm(orders_checkpoint_path, recurse=True)
+
+# COMMAND ----------
+
+dfstream_out = dfstream_query.writeStream.toTable(orders_table,
+                                                  format="delta",
+                                                  outputMode="append",
+                                                  partitionBy="submitted_yyyy_mm",
+                                                  queryName=orders_table,
+                                                  checkpointLocation=orders_checkpoint_path
+                                                 )
 
 # COMMAND ----------
 
@@ -140,6 +196,10 @@ reality_check_05_a()
 # MAGIC **Caution**: In the cell above, you will be appending to a Delta table and the final record count will be validated below. Should you restart the stream, you will inevitably append duplicate records to these tables forcing the validation to fail. There are two things you will need to address in this scenario:
 # MAGIC * Address the duplicate data issue by re-running **Exercise #3** which would presumably delete and/or overwrite the datasets, putting them back to their default state for this exercise.
 # MAGIC * Address the stream's state issue (remembering which files were processed) by deleting the directory identified by *`orders_checkpoint_path`*
+
+# COMMAND ----------
+
+orders_checkpoint_path
 
 # COMMAND ----------
 
@@ -187,8 +247,41 @@ reality_check_05_b()
 
 # COMMAND ----------
 
-# TODO
-# Use this cell to complete your solution
+dfstream = spark.readStream.load(stream_path, 
+                                 format="json",
+                                 schema=stream_schema,
+                                 maxFilesPerTrigger=1)
+dfstream.isStreaming
+
+# COMMAND ----------
+
+dfstream_query = (dfstream
+                    .withColumn("ingested_at", F.current_timestamp())
+                    .withColumn("ingest_file_name", F.lit(stream_path))
+                   
+                    .withColumn("products", F.explode(F.col("products")))
+                    .withColumn("product_id", F.col("products").productId)
+                    .withColumn("product_quantity", F.col("products").quantity.cast("integer"))
+                    .withColumn("product_sold_price", F.col("products").soldPrice.cast("decimal(10,2)"))
+                    
+                    .withColumnRenamed("orderId", "order_id")
+   
+                    .drop("shippingAddress", "submittedAt", "salesRepId", "customerId", "products")
+               )
+
+# COMMAND ----------
+
+dbutils.fs.rm(line_items_checkpoint_path, recurse=True)
+
+# COMMAND ----------
+
+dfstream_line_out = dfstream_query.writeStream.toTable(
+                                                  line_items_table,
+                                                  format="delta",
+                                                  outputMode="append",
+                                                  queryName=line_items_table,
+                                                  checkpointLocation=line_items_checkpoint_path
+                                                 )
 
 # COMMAND ----------
 
@@ -203,6 +296,10 @@ reality_check_05_c()
 # COMMAND ----------
 
 reality_check_05_final()
+
+# COMMAND ----------
+
+spark.read.table(orders_table).filter(FT.col("submitted_at").isNull()).count()
 
 # COMMAND ----------
 

@@ -52,8 +52,8 @@
 
 # COMMAND ----------
 
-# TODO
-# Use this cell to complete your solution
+spark.catalog.setCurrentDatabase(user_db)
+spark.catalog.currentDatabase()
 
 # COMMAND ----------
 
@@ -113,14 +113,35 @@ reality_check_04_b()
 
 # COMMAND ----------
 
+dbutils.fs.head(products_xml_path)
+
+# COMMAND ----------
+
+from pyspark.sql import functions as F
+
+# COMMAND ----------
+
 # MAGIC %md ### Implement Exercise #4.C
 # MAGIC 
 # MAGIC Implement your solution in the following cell:
 
 # COMMAND ----------
 
-# TODO
-# Use this cell to complete your solution
+df2020 = spark.read.load(products_xml_path, format="xml", rootTag="products", rowTag="product", inferSchema=True)
+df2020 = (df2020
+          .withColumn("base_price", F.col("price")._base_price)
+          .withColumn("color_adj", F.col("price")._color_adj)
+          .withColumn("size_adj", F.col("price")._size_adj)
+          .withColumn("price", F.col("price").usd)
+          .withColumnRenamed("_product_id", "product_id")
+          .dropna(subset=("price"))
+         )
+df2020.printSchema()
+display(df2020)
+
+# COMMAND ----------
+
+df2020.write.saveAsTable(products_table, mode="overwrite")
 
 # COMMAND ----------
 

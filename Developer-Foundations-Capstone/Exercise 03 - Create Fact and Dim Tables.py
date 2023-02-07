@@ -62,8 +62,16 @@
 
 # COMMAND ----------
 
-# TODO
-# Use this cell to complete your solution
+user_db
+
+# COMMAND ----------
+
+spark.sql(f"CREATE SCHEMA IF NOT EXISTS {user_db}")
+
+# COMMAND ----------
+
+spark.catalog.setCurrentDatabase(user_db)
+spark.catalog.currentDatabase()
 
 # COMMAND ----------
 
@@ -87,14 +95,29 @@ reality_check_03_a()
 
 # COMMAND ----------
 
+batch_temp_view
+
+# COMMAND ----------
+
 # MAGIC %md ### Implement Exercise #3.B
 # MAGIC 
 # MAGIC Implement your solution in the following cell:
 
 # COMMAND ----------
 
-# TODO
-# Use this cell to complete your solution
+df = spark.read.load(batch_source_path, format="delta")
+
+# COMMAND ----------
+
+df.createOrReplaceTempView(batch_temp_view)
+
+# COMMAND ----------
+
+spark.catalog.cacheTable(batch_temp_view)
+
+# COMMAND ----------
+
+spark.catalog.listTables(user_db)
 
 # COMMAND ----------
 
@@ -152,8 +175,46 @@ reality_check_03_b()
 
 # COMMAND ----------
 
-# TODO
-# Use this cell to complete your solution
+dfv = spark.table(batch_temp_view)
+display(dfv)
+
+# COMMAND ----------
+
+from pyspark.sql import functions as F
+
+# COMMAND ----------
+
+desired_cols= set(["sales_rep_id", 
+                "sales_rep_ssn",
+                "sales_rep_first_name",
+                "sales_rep_last_name",
+                "sales_rep_address",
+                "sales_rep_city",
+                "sales_rep_state",
+                "sales_rep_zip",
+                "ingest_file_name",
+                "ingested_at",
+                "_error_ssn_format"])
+
+
+# COMMAND ----------
+
+dfv1 = (dfv
+        .withColumn("_error_ssn_format", F.col("sales_rep_ssn").contains("-"))
+        .withColumn("sales_rep_ssn", F.regexp_replace(F.col("sales_rep_ssn"), "-", "").cast("Long"))
+        .withColumn("sales_rep_zip", F.col("sales_rep_zip").cast("Integer"))
+        .select(*desired_cols)
+        .dropDuplicates(list(desired_cols - set(["ingest_file_name","ingested_at"])))
+       )
+display(dfv1)
+
+# COMMAND ----------
+
+dfv1.printSchema()
+
+# COMMAND ----------
+
+dfv1.write.saveAsTable(sales_reps_table, mode="overwrite")
 
 # COMMAND ----------
 
@@ -208,8 +269,45 @@ reality_check_03_c()
 
 # COMMAND ----------
 
-# TODO
-# Use this cell to complete your solution
+F.unix_timestamp()
+
+# COMMAND ----------
+
+dfv.columns
+
+# COMMAND ----------
+
+desired_cols_ords = set([
+ 'submitted_at',
+ 'order_id',
+ 'customer_id',
+ 'sales_rep_id',
+ 'shipping_address_attention',
+ 'shipping_address_address',
+ 'shipping_address_city',
+ 'shipping_address_state',
+ 'shipping_address_zip',
+ 'ingest_file_name',
+ 'ingested_at'])
+
+# COMMAND ----------
+
+dfv2 = (dfv
+        .withColumn("submitted_at", F.col("submitted_at").cast("long").cast("Timestamp"))
+        .withColumn("shipping_address_zip", F.col("shipping_address_zip").cast("integer"))
+        .select(*desired_cols_ords)
+        .dropDuplicates(list(desired_cols_ords - set(["ingest_file_name","ingested_at"])))
+        .withColumn("submitted_yyyy_mm", F.date_format(F.col("submitted_at"), "yyyy-MM"))
+       )
+display(dfv2)
+
+# COMMAND ----------
+
+dfv2.printSchema()
+
+# COMMAND ----------
+
+dfv2.write.saveAsTable(orders_table, mode="overwrite", partitionBy="submitted_yyyy_mm")
 
 # COMMAND ----------
 
@@ -254,8 +352,30 @@ reality_check_03_d()
 
 # COMMAND ----------
 
-# TODO
-# Use this cell to complete your solution
+desired_cols_itms = set([
+"order_id",
+"product_id",
+"product_quantity",
+"product_sold_price",
+"ingest_file_name",
+"ingested_at"])
+
+# COMMAND ----------
+
+dfv3 = (dfv
+        .select(*desired_cols_itms)
+        .withColumn("product_quantity", F.col("product_quantity").cast("integer"))
+        .withColumn("product_sold_price", F.col("product_sold_price").cast("decimal(10,2)"))
+       )
+display(dfv3)
+
+# COMMAND ----------
+
+dfv3.printSchema()
+
+# COMMAND ----------
+
+dfv3.write.saveAsTable(line_items_table, mode="overwrite")
 
 # COMMAND ----------
 
